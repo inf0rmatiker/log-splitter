@@ -7,5 +7,5 @@ Go-based, concurrent log handler for multiple IO streams.
 From project root:
 
 ```bash
-go build -o ./build/main ./cmd/main.go && ./build/main
+go build -o ./build/main ./cmd/main.go && ./build/main <inputfile>
 ```

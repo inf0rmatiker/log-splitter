@@ -1,3 +1,4 @@
 build/
 
-testfiles/*.{stderr,stdout}
+testfiles/*.stderr
+testfiles/*.stdout

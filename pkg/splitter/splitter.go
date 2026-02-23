@@ -102,17 +102,21 @@ func ProcessConcurrent(filepath string) error {
 	}
 	defer stderrFile.Close()
 
-	// Start two goroutines:
-	//   1 for writing to stdout (should have its own channel)
-	//   2 for writing to stderr (should have its own channel)
+	// Start two goroutines, each of which should have its own channel:
+	//   - one for writing to stdout
+	//   - another for writing to stderr
 	// We'll need to 'wait' on these to finish writing, otherwise the main
 	// thread could exit before the children have had time to write their lines.
 	// So, we'll use a sync.WaitGroup for 2 goroutines.
 	stderrChan, stdoutChan := make(chan string), make(chan string)
+	outputChannels := []chan string{stderrChan, stdoutChan}
+	fileWriters := []io.Writer{stderrFile, stdoutFile}
+
 	wg := sync.WaitGroup{}
-	wg.Add(2)
-	go processLogs(stdoutFile, stdoutChan, &wg)
-	go processLogs(stderrFile, stderrChan, &wg)
+	wg.Add(len(outputChannels))
+	for i, ch := range outputChannels {
+		go processLogs(fileWriters[i], ch, &wg)
+	}
 
 	// Iterate over input file scanned lines
 	//   Check line string prefix

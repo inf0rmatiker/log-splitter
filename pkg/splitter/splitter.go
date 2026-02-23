@@ -76,6 +76,13 @@ func writeLogLine(writer io.Writer, s string) error {
 	return nil
 }
 
+// Closes all the channels in the slice.
+func closeChannels(channels []chan string) {
+	for _, ch := range channels {
+		close(ch)
+	}
+}
+
 // ProcessConcurrent processes log lines in an input file specified by filepath.
 // If log lines contain an error prefix, they are written to a .stderr file, otherwise,
 // they are written to a .stdout file. Line writing happens concurrently with multiple goroutines.
@@ -127,10 +134,9 @@ func ProcessConcurrent(filepath string) error {
 
 		// Check for an error on the scanner
 		if err = scanner.Err(); err != nil {
-			fmt.Printf("Encountered error scanning: %v", err)
-			close(stdoutChan)
-			close(stderrChan)
-			return err
+			// Clean up and return
+			closeChannels(outputChannels)
+			return fmt.Errorf("encountered error scanning: %v", err)
 		}
 
 		line := scanner.Text()
@@ -142,8 +148,7 @@ func ProcessConcurrent(filepath string) error {
 	}
 
 	// Close channels so goroutines finish their loops, and mark wg.Done().
-	close(stdoutChan)
-	close(stderrChan)
+	closeChannels(outputChannels)
 
 	// Wait on all goroutines to finish what they were doing before exiting.
 	wg.Wait()
